@@ -1,23 +1,82 @@
-import os
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+from telegram.ext import Updater, CommandHandler, CallbackContext, MessageHandler, Filters
+import logging
+import json
+from datetime import datetime
+import os
 
-BOT_TOKEN = os.getenv("BOT_TOKEN")
-CHANNEL_LINK = os.getenv("CHANNEL_LINK")
+# ====== CONFIG ======
+TOKEN = os.getenv("BOT_TOKEN")
+CHANNEL_USERNAME = "@taj7onway"
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# ====== LOGGING ======
+logging.basicConfig(level=logging.INFO)
+
+# ====== DATABASE FILE ======
+DB_FILE = "users.json"
+
+def load_users():
+    try:
+        with open(DB_FILE, "r") as f:
+            return json.load(f)
+    except:
+        return {}
+
+def save_users(users):
+    with open(DB_FILE, "w") as f:
+        json.dump(users, f, indent=4)
+
+# ====== START COMMAND ======
+def start(update: Update, context: CallbackContext):
+    user = update.effective_user
+    users = load_users()
+
+    user_id = str(user.id)
+
+    if user_id not in users:
+        users[user_id] = {
+            "name": user.first_name,
+            "joined_at": str(datetime.now()),
+            "active": True
+        }
+        save_users(users)
+
     keyboard = [
-        [InlineKeyboardButton("🚀 JOIN OUR CHANNEL", url=CHANNEL_LINK)]
+        [InlineKeyboardButton("🚀 Join Channel", url=f"https://t.me/{CHANNEL_USERNAME.replace('@','')}")],
+        [InlineKeyboardButton("🔥 Get Bonus", callback_data="bonus")]
     ]
+
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    await update.message.reply_text(
-        "🔥 Welcome!\n\nClick below to join our channel 👇",
+    update.message.reply_text(
+        f"👋 Welcome {user.first_name}!\n\n"
+        "Join our premium channel for daily updates & offers 💰",
         reply_markup=reply_markup
     )
 
-app = ApplicationBuilder().token(BOT_TOKEN).build()
-app.add_handler(CommandHandler("start", start))
+# ====== MESSAGE TRACKING ======
+def track_messages(update: Update, context: CallbackContext):
+    user = update.effective_user
+    users = load_users()
 
-print("Bot is running...")
-app.run_polling()
+    user_id = str(user.id)
+
+    if user_id in users:
+        users[user_id]["last_active"] = str(datetime.now())
+        save_users(users)
+
+# ====== MAIN ======
+def main():
+    updater = Updater(TOKEN, use_context=True)
+    dp = updater.dispatcher
+
+    dp.add_handler(CommandHandler("start", start))
+    dp.add_handler(MessageHandler(Filters.text & ~Filters.command, track_messages))
+    dp.add_handler(MessageHandler(Filters.status_update.new_chat_members, start))
+    dp.add_handler(MessageHandler(Filters.all, track_messages))
+
+    updater.start_polling()
+    updater.idle()
+
+if __name__ == "__main__":
+    main()
