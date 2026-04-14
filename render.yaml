@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: telegram-join-bot
+    env: python
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python bot.py"
+    envVars:
+      - key: BOT_TOKEN
+        value: YOUR_BOT_TOKEN
+      - key: CHANNEL_LINK
+        value: https://t.me/YOUR_CHANNEL
