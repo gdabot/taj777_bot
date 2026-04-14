@@ -7,6 +7,6 @@ services:
     startCommand: "python bot.py"
     envVars:
       - key: BOT_TOKEN
-        value: YOUR_BOT_TOKEN
+        value: 8793285062:AAEI9e9BB5rRe9RTrNhYRlME8DdPjs-ND9I
       - key: CHANNEL_LINK
-        value: https://t.me/YOUR_CHANNEL
+        value: https://t.me/taj7onway
